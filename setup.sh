@@ -5,11 +5,10 @@ pip install -r requirements.txt
 echo "Package installation complete."
 
 echo "Checking whether transcoders present."
-DIR_NAME='./new-gpt-2-small-transcoders'
+DIR_NAME='./gpt-2-small-transcoders'
 if [ ! -d "$DIR_NAME" ]; then
     mkdir "$DIR_NAME"
 fi
-DIR_NAME='./new-gpt-2-small-transcoders'
 if [ -z $(ls -A "$DIR_NAME") ]; then
     echo "Transcoders not found. Downloading transcoders."
 
