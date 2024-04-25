@@ -1,6 +1,6 @@
 echo "Installing Python packages."
 
-pip -r requirements.txt
+pip install -r requirements.txt
 
 echo "Package installation complete."
 
@@ -13,12 +13,14 @@ DIR_NAME='./new-gpt-2-small-transcoders'
 if [ -z $(ls -A "$DIR_NAME") ]; then
     echo "Transcoders not found. Downloading transcoders."
 
+    export HF_HUB_DISABLE_PROGRESS_BARS=1
     python - <<HERE
 from huggingface_hub import snapshot_download
 snapshot_download(repo_id="pchlenski/gpt2-transcoders", allow_patterns=["*.pt"],
     local_dir="$DIR_NAME", local_dir_use_symlinks=False
 )
 HERE
+    export HF_HUB_DISABLE_PROGRESS_BARS=0
     echo "Transcoders downloaded."
 fi
 
