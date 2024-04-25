@@ -3,7 +3,7 @@ numpy==1.24.3
 plotly==5.18.0
 torch==2.2.0
 tqdm==4.65.0
-transformer_lens==1.15.0
+transformer_lens==1.11.0
 datasets==2.12.0
 einops==0.7.0
 jaxtyping==0.2.28
