@@ -18,11 +18,12 @@ import numpy as np
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-from transcoder_circuits.transcoder_training.config import LanguageModelSAERunnerConfig
-from transcoder_circuits.transcoder_training.lm_runner import language_model_sae_runner
+from sae_training.config import LanguageModelSAERunnerConfig
+from sae_training.utils import LMSparseAutoencoderSessionloader
+from sae_training.train_sae_on_language_model import train_sae_on_language_model
 
-lrs = 0.0004 # learning rate
-l1_coeff = 0.00014, # l1 sparsity regularization coefficient
+lr = 0.0004 # learning rate
+l1_coeff = 0.00014 # l1 sparsity regularization coefficient
 
 cfg = LanguageModelSAERunnerConfig(
     # Data Generating Function (Model + Training Distibuion)
@@ -33,8 +34,8 @@ cfg = LanguageModelSAERunnerConfig(
     #    pre-MLP LayerNorm -- that is, the inputs to the MLP.
     # You might alternatively prefer to train on "blocks.8.hook_resid_mid",
     #    which corresponds to the input to the pre-MLP LayerNorm.
-    hook_point = "blocks.8.ln2.hook_normalized",
-    hook_point_layer = 8,
+    hook_point = "blocks.4.ln2.hook_normalized",
+    hook_point_layer = 4,
     d_in = 768,
     dataset_path = "Skylion007/openwebtext",
     is_dataset_tokenized=False,
@@ -51,8 +52,8 @@ cfg = LanguageModelSAERunnerConfig(
     # As such, we want to grab the "hook_mlp_out" activations from our
     #    transformer, which (as the name suggests), represent the
     #    output activations of the original MLP sublayer.
-    out_hook_point = "blocks.8.hook_mlp_out",
-    out_hook_point_layer = 8,
+    out_hook_point = "blocks.4.hook_mlp_out",
+    out_hook_point_layer = 4,
     d_out = 768,
     
     # SAE Parameters
@@ -69,7 +70,7 @@ cfg = LanguageModelSAERunnerConfig(
     
     # Activation Store Parameters
     n_batches_in_buffer = 128,
-    total_training_tokens = 1_000_000 * 80,
+    total_training_tokens = 1_000_000 * 2,
     store_batch_size = 32,
     
     # Dead Neurons and Sparsity
@@ -88,11 +89,31 @@ cfg = LanguageModelSAERunnerConfig(
     device = "cuda",
     seed = 42,
     n_checkpoints = 3,
-    checkpoint_path = "gpt2-small-transcoders", # change as you please
+    checkpoint_path = "gpt2-small-transcoders-new", # change as you please
     dtype = torch.float32,
 )
 
-print(f"About to start training with lr {lr} and l1 {l1}")
+print(f"About to start training with lr {lr} and l1 {l1_coeff}")
 print(f"Checkpoint path: {cfg.checkpoint_path}")
+print(cfg)
 
-_ = language_model_sae_runner(cfg)
+loader = LMSparseAutoencoderSessionloader(cfg)
+model, sparse_autoencoder, activations_loader = loader.load_session()
+
+# train SAE
+sparse_autoencoder = train_sae_on_language_model(
+    model, sparse_autoencoder, activations_loader,
+    n_checkpoints=cfg.n_checkpoints,
+    batch_size = cfg.train_batch_size,
+    feature_sampling_method = cfg.feature_sampling_method,
+    feature_sampling_window = cfg.feature_sampling_window,
+    feature_reinit_scale = cfg.feature_reinit_scale,
+    dead_feature_threshold = cfg.dead_feature_threshold,
+    dead_feature_window=cfg.dead_feature_window,
+    use_wandb = cfg.log_to_wandb,
+    wandb_log_frequency = cfg.wandb_log_frequency
+)
+
+# save sae to checkpoints folder
+path = f"{cfg.checkpoint_path}/final_{sparse_autoencoder.get_name()}.pt"
+sparse_autoencoder.save_model(path)
