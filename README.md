@@ -2,7 +2,7 @@
 
 This repository contains tools for understanding what's going on inside large language models by using a tool called "transcoders". Transcoders decompose MLP sublayers in transformer models into a sparse linear combination of interpretable features. By using transcoders, we can reverse-engineer fine-grained circuits of features within the model.
 
-To get started, we recommend working through the `walkthrough.ipynb` notebook. The full structure of the repository is as follows:
+To get started, first run `bash setup.sh` to install dependencies and [download transcoder weights](https://huggingface.co/pchlenski/gpt2-transcoders). Then, to learn how to use `transcoder_circuits`, we recommend working through the `walkthrough.ipynb` notebook. The full structure of the repository is as follows:
 
 * Installation tools:
   * `setup.sh`: A shell script for installing dependencies and downloading transcoder weights.
